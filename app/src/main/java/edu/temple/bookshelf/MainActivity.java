@@ -44,6 +44,7 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
             getSupportFragmentManager()
                     .beginTransaction()
                     .replace(R.id.container_2, bookDetailsFragment)
+                    .addToBackStack(null)
                     .commit();
         }
     }
@@ -54,6 +55,7 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
             getSupportFragmentManager()
                     .beginTransaction()
                     .replace(R.id.container_1, BookDetailsFragment.newInstance(bookArrayList.get(position)))
+                    .addToBackStack(null)
                     .commit();
         }
         else{
