@@ -7,7 +7,10 @@ import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
+
+import com.squareup.picasso.Picasso;
 
 public class BookDetailsFragment extends Fragment {
 
@@ -15,6 +18,8 @@ public class BookDetailsFragment extends Fragment {
     private Book book;
 
     TextView titleTextView, authorTextView;
+    ImageView imgBook;
+
 
     public BookDetailsFragment() {}
 
@@ -47,7 +52,7 @@ public class BookDetailsFragment extends Fragment {
 
         titleTextView = v.findViewById(R.id.titleTextView);
         authorTextView = v.findViewById(R.id.authorTextView);
-
+        imgBook = v.findViewById(R.id.imgBook);
         /*
         Because this fragment can be created with or without
         a book to display when attached, we need to make sure
@@ -65,5 +70,6 @@ public class BookDetailsFragment extends Fragment {
     public void displayBook(Book book) {
         titleTextView.setText(book.getTitle());
         authorTextView.setText(book.getAuthor());
+        Picasso.get().load(book.getCoverURL()).into(imgBook);
     }
 }

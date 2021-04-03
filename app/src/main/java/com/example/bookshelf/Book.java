@@ -3,10 +3,13 @@ package com.example.bookshelf;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.google.gson.annotations.SerializedName;
+
 public class Book implements Parcelable {
     private String title;
     private String author;
     private int id;
+    @SerializedName("cover_url")
     private String coverURL;
 
     public Book(String title, String author, int id, String coverURL) {
