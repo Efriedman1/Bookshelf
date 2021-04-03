@@ -4,7 +4,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 
 public class MainActivity extends AppCompatActivity implements BookListFragment.BookSelectedInterface {
 
@@ -19,6 +21,14 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        findViewById(R.id.buttonSecondActivity).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, BookSearchActivity.class);
+                startActivity(intent);
+            }
+        });
 
         //Fetch selected book if there was one
         if (savedInstanceState != null)
@@ -69,19 +79,9 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
         BookList books = new BookList();
         Book book;
 
-        books.add(book = new Book("How to Win Friends and Influence People", "Dale Carnegie"));
-        books.add(book = new Book("The Psychology of Selling", "Brian Tracy"));
-        books.add(book = new Book("Rich Dad, Poor Dad", "Robert Kiyosaki"));
-        books.add(book = new Book("Rich Woman", "Kim Kiyosaki"));
-        books.add(book = new Book("Thinking, Fast and Slow", "Daniel Kahneman"));
-        books.add(book = new Book("The 4-Hour Workweek", "Timothy Ferriss"));
-        books.add(book = new Book("The $100 Startup", "Chris Gillebeau"));
-        books.add(book = new Book("Click Millionaires", "Scott Fox"));
-        books.add(book = new Book("The E-Myth Revisited", "Michael E. Gerber"));
-        books.add(book = new Book("Crush It!", "Gary Vaynerchuk"));
-//        for (int i = 1; i <= 10; i++) {
+        for (int i = 1; i <= 10; i++) {
 //            books.add(book = new Book("Book" + i, "Author" + i));
-//        }
+        }
         return books;
     };
 
