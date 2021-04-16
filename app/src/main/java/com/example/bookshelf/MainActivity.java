@@ -28,6 +28,8 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
     private static final int SEARCH_BOOK_REQUEST_CODE = 21;
     private final String KEY_SELECTED_BOOK = "selectedBook";
     private static final String KEY_BOOK_LIST = "bookList";
+    private static final String KEY_BOOK_PROGRESS = "bookProgress";
+    private static final String KEY_BOOK_PLAYING = "bookPlaying";
     private FragmentManager fm;
     public AudiobookService.MediaControlBinder binder;
 
@@ -60,6 +62,11 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
             Gson gson=new Gson();
             Type type=new TypeToken<ArrayList<Book>>(){}.getType();
             bookListData=gson.fromJson(booksList,type);
+
+            //check if audio was being played
+            isBookPlaying = savedInstanceState.getBoolean(KEY_BOOK_PLAYING, false);
+            //get current progress
+            currentProgress = savedInstanceState.getInt(KEY_BOOK_PROGRESS);
         }
 
         twoPane = findViewById(R.id.container2) != null;
@@ -136,6 +143,8 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
         super.onSaveInstanceState(outState);
         outState.putParcelable(KEY_SELECTED_BOOK, selectedBook);
         outState.putString(KEY_BOOK_LIST, booksList);
+        outState.putInt(KEY_BOOK_PROGRESS, currentProgress);
+        outState.putBoolean(KEY_BOOK_PLAYING, binder.isPlaying());
 
     }
 
