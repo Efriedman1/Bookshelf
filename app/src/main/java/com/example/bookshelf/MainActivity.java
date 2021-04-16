@@ -1,39 +1,44 @@
 package com.example.bookshelf;
 
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Message;
 import android.view.View;
-import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-
-import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements BookListFragment.BookSelectedInterface {
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import edu.temple.audiobookplayer.AudiobookService;
+
+public class MainActivity extends AppCompatActivity implements BookListFragment.BookSelectedInterface, ControlFragment.PlayingBookInterface {
 
 
     private static final int SEARCH_BOOK_REQUEST_CODE = 21;
+    private final String KEY_SELECTED_BOOK = "selectedBook";
     private static final String KEY_BOOK_LIST = "bookList";
-    FragmentManager fm;
+    private FragmentManager fm;
+    public AudiobookService.MediaControlBinder binder;
 
     boolean twoPane;
-    BookDetailsFragment bookDetailsFragment;
+    private BookDetailsFragment bookDetailsFragment;
+    private ControlFragment controlFragment;
+    private int currentProgress;
+    private boolean isBookPlaying;
     Book selectedBook;
     String booksList="";
     ArrayList<Book> bookListData=new ArrayList<>();
-    private final String KEY_SELECTED_BOOK = "selectedBook";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,6 +78,11 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
                     .add(R.id.container1, BookListFragment.newInstance(bookListData))
                     .commit();
 
+        // Setup ControlFragment
+        controlFragment = (selectedBook == null) ? new ControlFragment() : ControlFragment.newInstance(selectedBook);
+        fm.beginTransaction()
+                .replace(R.id.controlContainer, controlFragment)
+                .commit();
         /*
         If we have two containers available, load a single instance
         of BookDetailsFragment to display all selected books
@@ -95,23 +105,14 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
 
     }
 
-    /*
-    Generate an arbitrary list of "books" for testing
-     */
-    private BookList getTestBooks() {
-        BookList books = new BookList();
-        Book book;
-
-        for (int i = 1; i <= 10; i++) {
-//            books.add(book = new Book("Book" + i, "Author" + i));
-        }
-        return books;
-    };
-
     @Override
     public void bookSelected(int index) {
         //Store the selected book to use later if activity restarts
         selectedBook = bookListData.get(index);
+
+        //update the selected book for ControlFragment
+        controlFragment.selectedBook(selectedBook);
+        currentProgress = 0;
 
         if (twoPane)
             /*
@@ -152,19 +153,109 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
             if (resultCode==RESULT_OK){
                 assert data != null;
                 booksList=data.getStringExtra("result");
-                //                    JSONArray jsonArray=new JSONArray(booksList);
                 Gson gson=new Gson();
                 Type type=new TypeToken<ArrayList<Book>>(){}.getType();
                 bookListData=gson.fromJson(booksList,type);
+
+                //remove previously selected book
+                controlFragment.selectedBook(selectedBook);
+
                 fm = getSupportFragmentManager();
 
                 fm.beginTransaction()
                         .replace(R.id.container1, BookListFragment.newInstance(bookListData))
                         .commit();
-//                  BookList bookList=  gson.fromJson(booksList,BookList.class);
+            }
+        }
+    }
 
-//                Toast.makeText(MainActivity.this,bookListData.get(0).getTitle(),Toast.LENGTH_LONG).show();
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // Bind to LocalService
+        Intent intent = new Intent(this, AudiobookService.class);
+        bindService(intent, connection, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        unbindService(connection);
+    }
+
+    /** Defines callbacks for service binding, passed to bindService() */
+    private ServiceConnection connection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className,
+                                       IBinder iBinder) {
+            // We've bound to AudiobookService, cast the IBinder to get MediaControlBinder instance
+            binder = (AudiobookService.MediaControlBinder) iBinder;
+            binder.setProgressHandler(new IncomingHandler());
+
+            //Check if audio was playing
+            if (selectedBook != null && isBookPlaying) {
+                binder.play(selectedBook.getId(), currentProgress);
+                controlFragment.updateUI(currentProgress, true);
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            binder = null;
+            //update the UI
+            currentProgress = 0;
+            controlFragment.updateUI(currentProgress,false);
+        }
+    };
+
+    @Override
+    public void play(int id)
+    {
+        if (binder.isBinderAlive() && !binder.isPlaying()) {
+            binder.play(id,currentProgress);
+            controlFragment.updateUI(currentProgress, true);
+        }
+    }
+
+    @Override
+    public void pause()
+    {
+        if (binder.isBinderAlive() && binder.isPlaying())
+            binder.pause();
+    }
+
+    @Override
+    public void stop()
+    {
+        if (binder.isBinderAlive() && binder.isPlaying()) {
+            binder.stop();
+            currentProgress = 0;
+            controlFragment.updateUI(currentProgress,false);
+        }
+    }
+
+    @Override
+    public void seekTo(int position)
+    {
+        if (binder.isBinderAlive() && binder.isPlaying()) {
+            currentProgress = position;
+            binder.seekTo(position);
+        }
+    }
+
+    /**
+     * Handler of incoming messages from AudioBookService.
+     */
+    class IncomingHandler extends Handler
+    {
+        @Override
+        public void handleMessage(Message msg) {
+            AudiobookService.BookProgress bookProgress = (AudiobookService.BookProgress) msg.obj;
+            if(bookProgress != null) {
+                currentProgress = bookProgress.getProgress();
+                controlFragment.updateProgress(currentProgress);
             }
         }
     }
