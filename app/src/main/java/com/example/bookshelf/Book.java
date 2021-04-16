@@ -11,12 +11,14 @@ public class Book implements Parcelable {
     private int id;
     @SerializedName("cover_url")
     private String coverURL;
+    private int duration;
 
-    public Book(String title, String author, int id, String coverURL) {
+    public Book(String title, String author, int id, String coverURL, int duration) {
         this.title = title;
         this.author = author;
         this.id = id;
         this.coverURL = coverURL;
+        this.duration = duration;
     }
 
     protected Book(Parcel in) {
@@ -66,6 +68,16 @@ public class Book implements Parcelable {
 
     public void setCoverURL(String coverURL) {
         this.coverURL = coverURL;
+    }
+
+    public int getDuration()
+    {
+        return duration;
+    }
+
+    public void setDuration(int duration)
+    {
+        this.duration = duration;
     }
 
     @Override
